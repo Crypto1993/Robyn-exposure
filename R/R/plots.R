@@ -172,7 +172,7 @@ robyn_plots <- function(InputCollect, OutputCollect, export = TRUE, ...) {
     if (length(temp_all) > 0) {
       xDecompAgg <- temp_all$xDecompAgg
       dt_ridges <- xDecompAgg %>%
-        filter(.data$rn %in% InputCollect$paid_media_spends) %>%
+        filter(.data$rn %in% InputCollect$paid_media_vars) %>%
         mutate(iteration = (.data$iterNG - 1) * OutputCollect$cores + .data$iterPar) %>%
         select(variables = .data$rn, .data$roi_total, .data$iteration, .data$trial) %>%
         arrange(.data$iteration, .data$variables)
@@ -294,7 +294,7 @@ robyn_onepagers <- function(InputCollect, OutputCollect, select_model = NULL, qu
 
     plotMediaShare <- filter(
       xDecompAgg, .data$robynPareto == pf,
-      .data$rn %in% InputCollect$paid_media_spends
+      .data$rn %in% InputCollect$paid_media_vars
     )
     uniqueSol <- unique(plotMediaShare$solID)
 
