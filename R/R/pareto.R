@@ -234,7 +234,7 @@ robyn_pareto <- function(InputCollect, OutputModels,
     plotMediaShare <- filter(
       xDecompAgg,
       .data$robynPareto == pf,
-      .data$rn %in% InputCollect$paid_media_spends
+      .data$rn %in% InputCollect$paid_media_vars
     )
     uniqueSol <- unique(plotMediaShare$solID)
     plotWaterfall <- xDecompAgg %>% filter(.data$robynPareto == pf)
@@ -265,7 +265,7 @@ robyn_pareto <- function(InputCollect, OutputModels,
           c("spend_share", "effect_share", "roi_total", "cpa_total")
         ) %>%
         select(c("rn", "nrmse", "decomp.rssd", "rsq_train", "variable", "value")) %>%
-        mutate(rn = factor(.data$rn, levels = sort(InputCollect$paid_media_spends)))
+        mutate(rn = factor(.data$rn, levels = sort(InputCollect$paid_media_vars)))
       plotMediaShareLoopBar <- filter(temp, .data$variable %in% c("spend_share", "effect_share"))
       plotMediaShareLoopLine <- filter(temp, .data$variable == ifelse(
         InputCollect$dep_var_type == "conversion", "cpa_total", "roi_total"
