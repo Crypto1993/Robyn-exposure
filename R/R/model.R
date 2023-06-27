@@ -741,7 +741,7 @@ robyn_mmm <- function(InputCollect,
                 effect_share_refresh = .data$xDecompPercRF / sum(.data$xDecompPercRF)
               )
             dt_decompSpendDist <- left_join(
-              filter(decompCollect$xDecompAgg, .data$rn %in% paid_media_spends),
+              filter(decompCollect$xDecompAgg, .data$rn %in% paid_media_vars),
               select(dt_decompSpendDist, .data$rn, contains("_spend"), contains("_share")),
               by = "rn"
             )
@@ -759,11 +759,11 @@ robyn_mmm <- function(InputCollect,
                   by = "rn"
                 )
               decomp.rssd.media <- dt_decompRF %>%
-                filter(.data$rn %in% paid_media_spends) %>%
+                filter(.data$rn %in% paid_media_vars) %>%
                 summarise(rssd.media = sqrt(mean((.data$decomp_perc - .data$decomp_perc_prev)^2))) %>%
                 pull(.data$rssd.media)
               decomp.rssd.nonmedia <- dt_decompRF %>%
-                filter(!.data$rn %in% paid_media_spends) %>%
+                filter(!.data$rn %in% paid_media_vars) %>%
                 summarise(rssd.nonmedia = sqrt(mean((.data$decomp_perc - .data$decomp_perc_prev)^2))) %>%
                 pull(.data$rssd.nonmedia)
               decomp.rssd <- decomp.rssd.media + decomp.rssd.nonmedia /
