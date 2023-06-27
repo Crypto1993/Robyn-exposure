@@ -60,7 +60,7 @@ robyn_pareto <- function(InputCollect, OutputModels,
   }
 
   xDecompAggCoef0 <- xDecompAgg %>%
-    filter(.data$rn %in% InputCollect$paid_media_spends) %>%
+    filter(.data$rn %in% InputCollect$paid_media_vars) %>%
     group_by(.data$solID) %>%
     summarise(coef0 = min(.data$coef, na.rm = TRUE) == 0)
 
