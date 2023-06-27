@@ -455,6 +455,7 @@ robyn_mmm <- function(InputCollect,
     dt_modRollWind <- InputCollect$dt_modRollWind
     refresh_steps <- InputCollect$refresh_steps
     rollingWindowLength <- InputCollect$rollingWindowLength
+    paid_media_vars <- InputCollect$paid_media_vars
     paid_media_spends <- InputCollect$paid_media_spends
     organic_vars <- InputCollect$organic_vars
     context_vars <- InputCollect$context_vars
@@ -475,7 +476,7 @@ robyn_mmm <- function(InputCollect,
   dt_inputTrain <- InputCollect$dt_input[rollingWindowStartWhich:rollingWindowEndWhich, ]
   temp <- select(dt_inputTrain, all_of(paid_media_spends))
   dt_spendShare <- data.frame(
-    rn = paid_media_spends,
+    rn = paid_media_vars,
     total_spend = unlist(summarise_all(temp, sum)),
     # mean_spend = unlist(summarise_all(temp, function(x) {
     #   ifelse(is.na(mean(x[x > 0])), 0, mean(x[x > 0]))
@@ -488,7 +489,7 @@ robyn_mmm <- function(InputCollect,
   temp <- select(dt_inputTrain, all_of(paid_media_spends)) %>%
     slice(refreshAddedStartWhich:rollingWindowLength)
   dt_spendShareRF <- data.frame(
-    rn = paid_media_spends,
+    rn = paid_media_vars,
     total_spend = unlist(summarise_all(temp, sum)),
     # mean_spend = unlist(summarise_all(temp, function(x) {
     #   ifelse(is.na(mean(x[x > 0])), 0, mean(x[x > 0]))
@@ -715,11 +716,13 @@ robyn_mmm <- function(InputCollect,
               mape <- mean(liftCollect$mape_lift, na.rm = TRUE)
             }
 
+
             #####################################
             #### DECOMP.RSSD: Business error
             # Sum of squared distance between decomp share and spend share to be minimized
             dt_decompSpendDist <- decompCollect$xDecompAgg %>%
-              filter(.data$rn %in% paid_media_spends) %>%
+            ## dobbiamo passare qui i 'paid_media_vars' 
+              filter(.data$rn %in% paid_media_vars) %>%
               select(
                 .data$rn, .data$xDecompAgg, .data$xDecompPerc, .data$xDecompMeanNon0Perc,
                 .data$xDecompMeanNon0, .data$xDecompPercRF, .data$xDecompMeanNon0PercRF,
@@ -1270,3 +1273,8 @@ init_msgs_run <- function(InputCollect, refresh, lambda_control = NULL, quiet = 
     }
   }
 }
+
+replace_values <- function(data, vector1, vector2) { 
+  data$rn <- ifelse(data$rn %in% vector1, vector2[match(data$rn, vector1)], data$rn) 
+  return(data)
+  }
