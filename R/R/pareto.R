@@ -306,6 +306,7 @@ robyn_pareto <- function(InputCollect, OutputModels,
       hypParam <- resultHypParamLoop[, get_hp_names]
       if (InputCollect$adstock == "geometric") {
         hypParam_thetas <- unlist(hypParam[paste0(InputCollect$all_media, "_thetas")])
+        print(hypParam_thetas)
         dt_geometric <- data.frame(channels = InputCollect$all_media, thetas = hypParam_thetas)
       }
       if (InputCollect$adstock %in% c("weibull_cdf", "weibull_pdf")) {
@@ -344,7 +345,7 @@ robyn_pareto <- function(InputCollect, OutputModels,
 
       ## 4. Spend response curve
       dt_transformPlot <- select(dt_mod, .data$ds, all_of(InputCollect$all_media)) # independent variables
-      dt_transformSpend <- cbind(dt_transformPlot[, "ds"], InputCollect$dt_input[, c(InputCollect$paid_media_spends)]) # spends of indep vars
+      dt_transformSpend <- cbind(dt_transformPlot[, "ds"], InputCollect$dt_input[, c(InputCollect$paid_media_vars)]) # spends of indep vars
       dt_transformSpendMod <- dt_transformPlot[rw_start_loc:rw_end_loc, ]
       # update non-spend variables
       # if (length(InputCollect$exposure_vars) > 0) {
