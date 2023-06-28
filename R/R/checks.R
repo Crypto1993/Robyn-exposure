@@ -849,7 +849,7 @@ check_metric_type <- function(metric_name, paid_media_spends, paid_media_vars, e
   if (metric_name %in% paid_media_spends && length(metric_name) == 1) {
     metric_type <- "spend"
   } else if (metric_name %in% exposure_vars && length(metric_name) == 1) {
-    metric_type <- "exposure"
+    metric_type <- "spend"
   } else if (metric_name %in% organic_vars && length(metric_name) == 1) {
     metric_type <- "organic"
   } else {
