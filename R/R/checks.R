@@ -547,7 +547,7 @@ check_hyper_limits <- function(hyperparameters, hyper) {
 }
 
 check_calibration <- function(dt_input, date_var, calibration_input, dayInterval, dep_var,
-                              window_start, window_end, paid_media_spends, organic_vars) {
+                              window_start, window_end, paid_media_vars, organic_vars) {
   if (!is.null(calibration_input)) {
     calibration_input <- as_tibble(as.data.frame(calibration_input))
     these <- c("channel", "liftStartDate", "liftEndDate", "liftAbs", "spend", "confidence", "metric", "calibration_scope")
@@ -557,7 +557,7 @@ check_calibration <- function(dt_input, date_var, calibration_input, dayInterval
     if (!is.numeric(calibration_input$liftAbs) || any(is.na(calibration_input$liftAbs))) {
       stop("Check 'calibration_input$liftAbs': all lift values must be valid numerical numbers")
     }
-    all_media <- c(paid_media_spends, organic_vars)
+    all_media <- c(paid_media_vars, organic_vars)
     cal_media <- str_split(calibration_input$channel, "\\+|,|;|\\s")
     if (!all(unlist(cal_media) %in% all_media)) {
       these <- unique(unlist(cal_media)[which(!unlist(cal_media) %in% all_media)])

@@ -263,7 +263,7 @@ robyn_inputs <- function(dt_input = NULL,
     ## Check calibration and iters/trials
     calibration_input <- check_calibration(
       dt_input, date_var, calibration_input, dayInterval, dep_var,
-      window_start, window_end, paid_media_spends, organic_vars
+      window_start, window_end, paid_media_vars, organic_vars
     )
 
     ## Not used variables
