@@ -338,7 +338,7 @@ robyn_inputs <- function(dt_input = NULL,
       dep_var = InputCollect$dep_var,
       window_start = InputCollect$window_start,
       window_end = InputCollect$window_end,
-      paid_media_spends = InputCollect$paid_media_spends,
+      paid_media_vars = InputCollect$paid_media_vars,
       organic_vars = InputCollect$organic_vars
     )
 
