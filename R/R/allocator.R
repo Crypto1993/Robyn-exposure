@@ -174,8 +174,8 @@ robyn_allocator <- function(robyn_object = NULL,
   if (length(channel_constr_low) == 1) channel_constr_low <- rep(channel_constr_low, length(paid_media_spends))
   if (length(channel_constr_up) == 1) channel_constr_up <- rep(channel_constr_up, length(paid_media_spends))
   check_allocator_constrains(channel_constr_low, channel_constr_up)
-  names(channel_constr_low) <- paid_media_vars
-  names(channel_constr_up) <- paid_media_vars
+  names(channel_constr_low) <- paid_media_spends
+  names(channel_constr_up) <- paid_media_spends
   channel_constr_low <- channel_constr_low[media_order]
   channel_constr_up <- channel_constr_up[media_order]
   dt_hyppar <- filter(OutputCollect$resultHypParam, .data$solID == select_model)
@@ -443,9 +443,6 @@ robyn_allocator <- function(robyn_object = NULL,
   x_hist_carryover <- unlist(lapply(hist_carryover_eval, mean))
   if (scenario == "max_response") {
     ## bounded optimisation
-
-    print("X0 values")
-    print(x0)
 
     nlsMod <- nloptr::nloptr(
       x0 = x0,
