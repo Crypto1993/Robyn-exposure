@@ -153,13 +153,9 @@ robyn_allocator <- function(robyn_object = NULL,
   mm_lm_coefs <- InputCollect$modNLS$results$coef_lm
   names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
 
-  print(mm_lm_coefs)
-
   # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
   mediaSpendSorted <- paid_media_spends[media_order]
-
-  print(mediaSpendSorted)
   # fine modific
   dep_var_type <- InputCollect$dep_var_type
 
@@ -300,8 +296,11 @@ robyn_allocator <- function(robyn_object = NULL,
     )
     # val <- sort(resp$response_total)[round(length(resp$response_total) / 2)]
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
+    
+    
     hist_carryover[[i]] <- resp$input_carryover
-    print(resp$input_carryover)
+
+    sprintf("Response %s: %s", mediaVarsSorted[i], resp$input_immediate)
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
@@ -327,6 +326,21 @@ robyn_allocator <- function(robyn_object = NULL,
     initResponseUnit <- c(initResponseUnit, resp_simulate)
     initResponseMargUnit <- c(initResponseMargUnit, resp_simulate_plus1 - resp_simulate)
   }
+
+  ## DEBUG PRINTS
+  print("--- DEBUG PRINTS ---")
+  sprintf("Response: %s", initResponseUnit)
+  sprintf("Response Marginal: %s", initResponseMargUnit)
+  sprintf("Response Carryover: %s", hist_carryover)
+  sprintf("MedieVarsSorted: %s", mediaVarsSorted)
+  sprintf("Len MedieVarsSorted: %s", length(mediaVarsSorted))
+  sprintf("Len initResponseUnit: %s", length(initResponseUnit))
+  sprintf("Len initResponseMargUnit: %s", length(initResponseMargUnit))
+  sprintf("Len hist_carryover: %s", length(hist_carryover))
+  sprintf("Len MediaSpendSorted: %s", length(mediaSpendSorted))
+
+
+
   names(initResponseUnit) <- names(hist_carryover) <- mediaVarsSorted
   if (length(zero_spend_channel) > 0 && !quiet) {
     message("Media variables with 0 spending during date range: ", v2t(zero_spend_channel))
@@ -417,7 +431,6 @@ robyn_allocator <- function(robyn_object = NULL,
     inflexions_eval = inflexions_eval,
     mm_lm_coefs = mm_lm_coefs,
     mediaVarsSorted = mediaVarsSorted,
-    # mediaSpendSortedFiltered = mediaSpendSorted,
     total_budget = total_budget,
     total_budget_unit = total_budget_unit,
     hist_carryover_eval = hist_carryover_eval,
