@@ -678,7 +678,7 @@ robyn_allocator <- function(robyn_object = NULL,
     group_by(.data$channels)
 
   plotDT_scurve <- list()
-  for (i in channel_for_allocation) { # i <- channels[i]
+  for (i in channel_for_allocation_media) { # i <- channels[i]
     carryover_vec <- eval_list$hist_carryover_eval[[i]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
