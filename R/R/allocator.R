@@ -679,20 +679,13 @@ robyn_allocator <- function(robyn_object = NULL,
     group_by(.data$channels)
 
 
-  spend_carry_over <- eval_list$hist_carryover_eval
-
-  idx <- 1
-  spend_carry_over <- list()
-  for (i in names(eval_list$hist_carryover_eval)){
-    spend_carry_over[[idx]] <- mm_lm_coefs[i] * eval_list$hist_carryover_eval[[i]]
-    idx <- idx + 1
-  }
-  names(spend_carry_over) <- mediaSpendSorted
+  translation <- mediaVarsSorted
+  names(translation) <- mediaSpendSorted
 
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
 
-    carryover_vec <- spend_carry_over[[i]]
+    carryover_vec <- eval_list$carryover_vec[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
@@ -706,20 +699,20 @@ robyn_allocator <- function(robyn_object = NULL,
     simulate_spend <- seq(0, get_max_x, length.out = 100)
     simulate_response <- fx_objective(
       x = simulate_spend,
-      coeff = eval_list$coefs_eval[[i]],
-      alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
-      inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
+      coeff = eval_list$coefs_eval[[translation[i]]],
+      alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
+      inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
       x_hist_carryover = 0,
-      mm_lm_coefs = mm_lm_coefs[i],
+      mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
     simulate_response_carryover <- fx_objective(
       x = mean(carryover_vec),
-      coeff = eval_list$coefs_eval[[i]],
-      alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
-      inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
+      coeff = eval_list$coefs_eval[[translation[i]]],
+      alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
+      inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
       x_hist_carryover = 0,
-      mm_lm_coefs = mm_lm_coefs[i],
+      mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
     plotDT_scurve[[i]] <- data.frame(
