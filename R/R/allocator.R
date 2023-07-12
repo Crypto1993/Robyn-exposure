@@ -678,9 +678,21 @@ robyn_allocator <- function(robyn_object = NULL,
     mutate(spend = as.numeric(.data$spend), response = as.numeric(.data$response)) %>%
     group_by(.data$channels)
 
+
+  spend_carry_over <- eval_list$hist_carryover_eval
+
+  idx <- 1
+  spend_carry_over <- list()
+  for (i in eval_list$hist_carryover_eval){
+    spend_carry_over[[idx]] <- mm_lm_coefs[i] * i
+    idx <- idx + 1
+  }
+  names(spends_carry_over) <- mediaSpendSorted
+
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
-    carryover_vec <- eval_list$hist_carryover_eval[[i]]
+
+    carryover_vec <- spends_carry_over[[i]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
@@ -711,7 +723,8 @@ robyn_allocator <- function(robyn_object = NULL,
       get_sum = FALSE
     )
     plotDT_scurve[[i]] <- data.frame(
-      channel = i, spend = simulate_spend,
+      channel = i, 
+      spend = simulate_spend,
       mean_carryover = mean(carryover_vec),
       carryover_response = simulate_response_carryover,
       total_response = simulate_response
