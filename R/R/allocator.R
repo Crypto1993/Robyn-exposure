@@ -221,7 +221,7 @@ robyn_allocator <- function(robyn_object = NULL,
   coefs_sorted <- hills$coefs_sorted
 
   # Spend values based on date range set
-  dt_optimCost <- slice(InputCollect$dt_mod, InputCollect$rollingWindowStartWhich:InputCollect$rollingWindowEndWhich)
+  dt_optimCost <- slice(InputCollect$dt_input, InputCollect$rollingWindowStartWhich:InputCollect$rollingWindowEndWhich)
   new_date_range <- check_metric_dates(date_range, dt_optimCost$ds, InputCollect$dayInterval, quiet = FALSE, is_allocator = TRUE)
   date_min <- head(new_date_range$date_range_updated, 1)
   date_max <- tail(new_date_range$date_range_updated, 1)
@@ -926,7 +926,7 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
   print(mm_lm_coefs[chnName])
   print("x * mm_lm_coefs[chnName]")
   print(x * mm_lm_coefs[chnName])
-  
+
   
   xScaled <- x * mm_lm_coefs[chnName]
 
