@@ -328,22 +328,6 @@ robyn_allocator <- function(robyn_object = NULL,
     initResponseMargUnit <- c(initResponseMargUnit, resp_simulate_plus1 - resp_simulate)
   }
 
-  ## DEBUG PRINTS
-  print("--- DEBUG PRINTS ---")
-  print("initSpendUnit")
-  print(initSpendUnit)
-  print("initResponseUnit")
-  print(initResponseUnit)
-  print("initResponseMargUnit")
-  print(initResponseMargUnit)
-  print("hist_carryover")
-  print(hist_carryover)
-  print("mediaVarsSorted")
-  print(mediaVarsSorted)
-
-
-
-
   names(initResponseUnit) <- names(hist_carryover) <- mediaVarsSorted
   if (length(zero_spend_channel) > 0 && !quiet) {
     message("Media variables with 0 spending during date range: ", v2t(zero_spend_channel))
@@ -461,6 +445,10 @@ robyn_allocator <- function(robyn_object = NULL,
   x_hist_carryover <- unlist(lapply(hist_carryover_eval, mean))
   if (scenario == "max_response") {
     ## bounded optimisation
+
+    print("X0 values")
+    print(x0)
+
     nlsMod <- nloptr::nloptr(
       x0 = x0,
       eval_f = eval_f,
@@ -910,7 +898,7 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
   xScaled <- x * mm_lm_coefs[chnName]
 
   # Adstock scales
-  xAdstocked <- xScaled + mean(x_hist_carryover)
+  xAdstocked <- xScaled + mean(x_hist_carryover[chnName])
   # Hill transformation
   if (get_sum) {
     xOut <- coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
