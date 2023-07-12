@@ -329,15 +329,15 @@ robyn_allocator <- function(robyn_object = NULL,
 
   ## DEBUG PRINTS
   print("--- DEBUG PRINTS ---")
-  sprintf("Response: %s", initResponseUnit)
-  sprintf("Response Marginal: %s", initResponseMargUnit)
-  sprintf("Response Carryover: %s", hist_carryover)
-  sprintf("MedieVarsSorted: %s", mediaVarsSorted)
-  sprintf("Len MedieVarsSorted: %s", length(mediaVarsSorted))
-  sprintf("Len initResponseUnit: %s", length(initResponseUnit))
-  sprintf("Len initResponseMargUnit: %s", length(initResponseMargUnit))
-  sprintf("Len hist_carryover: %s", length(hist_carryover))
-  sprintf("Len MediaSpendSorted: %s", length(mediaSpendSorted))
+  message(sprintf("Response: %s", initResponseUnit))
+  message(sprintf("Response Marginal: %s", initResponseMargUnit))
+  message(sprintf("Response Carryover: %s", hist_carryover))
+  message(sprintf("MedieVarsSorted: %s", mediaVarsSorted))
+  message(sprintf("Len MedieVarsSorted: %s", length(mediaVarsSorted)))
+  message(sprintf("Len initResponseUnit: %s", length(initResponseUnit)))
+  message(sprintf("Len initResponseMargUnit: %s", length(initResponseMargUnit)))
+  message(sprintf("Len hist_carryover: %s", length(hist_carryover)))
+  message(sprintf("Len MediaSpendSorted: %s", length(mediaSpendSorted)))
 
 
 
