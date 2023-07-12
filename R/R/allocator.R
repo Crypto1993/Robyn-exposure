@@ -644,6 +644,7 @@ robyn_allocator <- function(robyn_object = NULL,
     )
   .Options$ROBYN_TEMP <- NULL # Clean auxiliary method
 
+  print(dt_optimOut)
 ### ricomincio da qua
 ## fx vanno cambiato, ripristare i parametri di michaelis, poi facciamo l inverso
   ## Calculate curves and main points for each channel
@@ -678,7 +679,7 @@ robyn_allocator <- function(robyn_object = NULL,
     group_by(.data$channels)
 
   plotDT_scurve <- list()
-  for (i in channel_for_allocation_media) { # i <- channels[i]
+  for (i in channel_for_allocation) { # i <- channels[i]
     carryover_vec <- eval_list$hist_carryover_eval[[i]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
@@ -688,6 +689,7 @@ robyn_allocator <- function(robyn_object = NULL,
           mean(carryover_vec), .data$spend
         )
       ))
+    print(filter(dt_optimOutScurve, .data$channels == i)$spend)
     get_max_x <- max(filter(dt_optimOutScurve, .data$channels == i)$spend) * 1.5
     simulate_spend <- seq(0, get_max_x, length.out = 100)
     simulate_response <- fx_objective(
