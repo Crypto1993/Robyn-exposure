@@ -309,8 +309,7 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
-      mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted[i],
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     resp_simulate_plus1 <- fx_objective(
@@ -319,8 +318,7 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
-       mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted[i],
+       mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     names(hist_carryover[[i]]) <- resp$date
@@ -529,8 +527,7 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
-      mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted,
+    mm_lm_coefs = mm_lm_coefs,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnit
@@ -541,8 +538,7 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
-      mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted,
+    mm_lm_coefs = mm_lm_coefs,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnitUnbound
@@ -703,8 +699,7 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
       x_hist_carryover = 0,
-      mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted[i],
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     simulate_response_carryover <- fx_objective(
@@ -713,8 +708,7 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
       x_hist_carryover = 0,
-        mm_lm_coefs = mm_lm_coefs,
-      chnName = mediaVarsSorted[i],
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     plotDT_scurve[[i]] <- data.frame(
@@ -860,7 +854,6 @@ eval_f <- function(X, target_value) {
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
     mm_lm_coefs = mm_lm_coefs,
-    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   ))
 
@@ -872,7 +865,6 @@ eval_f <- function(X, target_value) {
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
     mm_lm_coefs = mm_lm_coefs,
-    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   ))
 
@@ -884,7 +876,6 @@ eval_f <- function(X, target_value) {
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
     mm_lm_coefs = mm_lm_coefs,
-    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   )
 
@@ -892,13 +883,13 @@ eval_f <- function(X, target_value) {
   return(optm)
 }
 
-fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL, chnName = NULL) {
+fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL) {
   #Apply Michaelis Menten model to scale spend to exposure
   
-  xScaled <- x * mm_lm_coefs[chnName]
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- xScaled + mean(x_hist_carryover[chnName])
+  xAdstocked <- xScaled + mean(x_hist_carryover)
   # Hill transformation
   if (get_sum) {
     xOut <- coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
@@ -910,11 +901,11 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
 
 # https://www.derivative-calculator.net/ on the objective function 1/(1+gamma^alpha / x^alpha)
 fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
-                         mm_lm_coefs = NULL, chnName = NULL
+                         mm_lm_coefs = NULL
 ) {
   # Apply Michaelis Menten model to scale spend to exposure
 
-  xScaled <- x * mm_lm_coefs[chnName]
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
   xAdstocked <- xScaled + mean(x_hist_carryover)
@@ -923,10 +914,10 @@ fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
 }
 
 fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover,
-                                mm_lm_coefs = NULL, chnName = NULL
+                                mm_lm_coefs = NULL
 ) {
   #Apply Michaelis Menten model to scale spend to exposur
-  xScaled <- x * mm_lm_coefs[chnName]
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
   xAdstocked <- xScaled + mean(x_hist_carryover)
