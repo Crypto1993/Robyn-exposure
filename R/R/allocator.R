@@ -684,7 +684,7 @@ robyn_allocator <- function(robyn_object = NULL,
   idx <- 1
   spend_carry_over <- list()
   for (i in eval_list$hist_carryover_eval){
-    spend_carry_over[[idx]] <- mm_lm_coefs[i] * eval_list$hist_carryover_eval[[i]]
+    spend_carry_over[[idx]] <- mm_lm_coefs[i] * eval_list$hist_carryover_eval[i]
     idx <- idx + 1
   }
   names(spends_carry_over) <- mediaSpendSorted
