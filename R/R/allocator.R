@@ -304,6 +304,8 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
+      mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted[i],
       get_sum = FALSE
     )
     resp_simulate_plus1 <- fx_objective(
@@ -312,6 +314,8 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
+       mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted[i],
       get_sum = FALSE
     )
     names(hist_carryover[[i]]) <- resp$date
