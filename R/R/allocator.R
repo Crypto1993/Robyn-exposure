@@ -339,7 +339,7 @@ robyn_allocator <- function(robyn_object = NULL,
   print(hist_carryover)
   print("mediaVarsSorted")
   print(mediaVarsSorted)
-  
+
 
 
 
@@ -540,6 +540,8 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
+      mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnit
@@ -550,6 +552,8 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
+      mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnitUnbound
@@ -710,6 +714,8 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
       x_hist_carryover = 0,
+      mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted[i],
       get_sum = FALSE
     )
     simulate_response_carryover <- fx_objective(
@@ -718,6 +724,8 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
       x_hist_carryover = 0,
+        mm_lm_coefs = mm_lm_coefs,
+      chnName = mediaVarsSorted[i],
       get_sum = FALSE
     )
     plotDT_scurve[[i]] <- data.frame(
@@ -897,6 +905,29 @@ eval_f <- function(X, target_value) {
 
 fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL, chnName = NULL) {
   #Apply Michaelis Menten model to scale spend to exposure
+  print("fx_objective called")
+  print("x value")
+  print(x)
+  print("chnName")
+  print(chnName)
+  print("mm_lm_coefs")
+  print(mm_lm_coefs)
+  print("x_hist_carryover")
+  print(x_hist_carryover)
+  print("coeff")
+  print(coeff)
+  print("alpha")
+  print(alpha)
+  print("inflexion")
+  print(inflexion)
+  print("get_sum")
+  print(get_sum)
+  print("mm_lm_coefs[chnName]")
+  print(mm_lm_coefs[chnName])
+  print("x * mm_lm_coefs[chnName]")
+  print(x * mm_lm_coefs[chnName])
+  
+  
   xScaled <- x * mm_lm_coefs[chnName]
 
   # Adstock scales
