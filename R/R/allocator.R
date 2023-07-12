@@ -204,8 +204,8 @@ robyn_allocator <- function(robyn_object = NULL,
   dt_hyppar <- select(dt_hyppar, hyper_names(InputCollect$adstock, mediaVarsSorted)) %>%
     select(sort(colnames(.)))
   dt_bestCoef <- dt_bestCoef[dt_bestCoef$rn %in% mediaVarsSorted, ]
-  channelConstrLowSorted <- channel_constr_low[mediaVarsSorted]
-  channelConstrUpSorted <- channel_constr_up[mediaVarsSorted]
+  channelConstrLowSorted <- channel_constr_low[mediaSpendSorted]
+  channelConstrUpSorted <- channel_constr_up[mediaSpendSorted]
 
   ## Get hill parameters for each channel, vedi in fondo usa adstocked media
   hills <- get_hill_params(
@@ -906,28 +906,6 @@ eval_f <- function(X, target_value) {
 
 fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL, chnName = NULL) {
   #Apply Michaelis Menten model to scale spend to exposure
-  print("fx_objective called")
-  print("x value")
-  print(x)
-  print("chnName")
-  print(chnName)
-  print("mm_lm_coefs")
-  print(mm_lm_coefs)
-  print("x_hist_carryover")
-  print(x_hist_carryover)
-  print("coeff")
-  print(coeff)
-  print("alpha")
-  print(alpha)
-  print("inflexion")
-  print(inflexion)
-  print("get_sum")
-  print(get_sum)
-  print("mm_lm_coefs[chnName]")
-  print(mm_lm_coefs[chnName])
-  print("x * mm_lm_coefs[chnName]")
-  print(x * mm_lm_coefs[chnName])
-
   
   xScaled <- x * mm_lm_coefs[chnName]
 
