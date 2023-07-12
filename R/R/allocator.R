@@ -149,13 +149,17 @@ robyn_allocator <- function(robyn_object = NULL,
   paid_media_vars <- InputCollect$paid_media_vars
   media_order <- order(paid_media_vars)
   mediaVarsSorted <- paid_media_vars[media_order]
+  
   mm_lm_coefs <- InputCollect$modNLS$results$coef_lm
   names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
 
+  print(mm_lm_coefs)
 
   # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
   mediaSpendSorted <- paid_media_spends[media_order]
+
+  print(mediaSpendSorted)
   # fine modific
   dep_var_type <- InputCollect$dep_var_type
 
@@ -297,6 +301,7 @@ robyn_allocator <- function(robyn_object = NULL,
     # val <- sort(resp$response_total)[round(length(resp$response_total) / 2)]
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
     hist_carryover[[i]] <- resp$input_carryover
+    print(resp$input_carryover)
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
@@ -322,7 +327,7 @@ robyn_allocator <- function(robyn_object = NULL,
     initResponseUnit <- c(initResponseUnit, resp_simulate)
     initResponseMargUnit <- c(initResponseMargUnit, resp_simulate_plus1 - resp_simulate)
   }
-  names(initResponseUnit) <- names(hist_carryover) <- mediaSpendSorted
+  names(initResponseUnit) <- names(hist_carryover) <- mediaVarsSorted
   if (length(zero_spend_channel) > 0 && !quiet) {
     message("Media variables with 0 spending during date range: ", v2t(zero_spend_channel))
     # hist_carryover[zero_spend_channel] <- 0
