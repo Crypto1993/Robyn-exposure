@@ -692,7 +692,7 @@ robyn_allocator <- function(robyn_object = NULL,
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
 
-    carryover_vec <- spends_carry_over[[i]]
+    carryover_vec <- spend_carry_over[[i]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
