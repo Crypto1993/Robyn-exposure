@@ -149,6 +149,9 @@ robyn_allocator <- function(robyn_object = NULL,
   paid_media_vars <- InputCollect$paid_media_vars
   media_order <- order(paid_media_vars)
   mediaVarsSorted <- paid_media_vars[media_order]
+  mm_lm_coefs <- InputCollect$modNLS$results$coef_lm
+  names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
+
 
   # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
@@ -178,10 +181,16 @@ robyn_allocator <- function(robyn_object = NULL,
   dt_hyppar <- filter(OutputCollect$resultHypParam, .data$solID == select_model)
   dt_bestCoef <- filter(OutputCollect$xDecompAgg, .data$solID == select_model, .data$rn %in% paid_media_vars)
 
+
   ## Check inputs and parameters
   scenario <- check_allocator(
-    OutputCollect, select_model, paid_media_spends, scenario,
-    channel_constr_low, channel_constr_up, constr_mode
+    OutputCollect,
+    select_model,
+    paid_media_spends,
+    scenario,
+    channel_constr_low,
+    channel_constr_up,
+    constr_mode
   )
 
   ## Sort media
@@ -200,7 +209,12 @@ robyn_allocator <- function(robyn_object = NULL,
 
   ## Get hill parameters for each channel, vedi in fondo usa adstocked media
   hills <- get_hill_params(
-    InputCollect, OutputCollect, dt_hyppar, dt_coef, mediaVarsSorted, select_model
+    InputCollect, 
+    OutputCollect, 
+    dt_hyppar, 
+    dt_coef, 
+    mediaVarsSorted, 
+    select_model
   )
   alphas <- hills$alphas
   inflexions <- hills$inflexions
@@ -361,7 +375,8 @@ robyn_allocator <- function(robyn_object = NULL,
   }
   channel_for_allocation_loc <- mediaSpendSorted %in% c(zero_coef_channel, zero_constraint_channel)
   channel_for_allocation <- mediaSpendSorted[!channel_for_allocation_loc]
-  channel_for_allocation_media <- mediaVarsSorted[!channel_for_allocation_loc]  
+  channel_for_allocation_media <- mediaVarsSorted[!channel_for_allocation_loc]
+
   if (length(zero_coef_channel) > 0) {
     temp_init <- temp_init_all[channel_for_allocation]
     temp_ub <- temp_ub_all[channel_for_allocation]
@@ -391,6 +406,8 @@ robyn_allocator <- function(robyn_object = NULL,
     coefs_eval = coefs_eval,
     alphas_eval = alphas_eval,
     inflexions_eval = inflexions_eval,
+    mm_lm_coefs = mm_lm_coefs,
+    mediaVarsSorted = mediaVarsSorted,
     # mediaSpendSortedFiltered = mediaSpendSorted,
     total_budget = total_budget,
     total_budget_unit = total_budget_unit,
@@ -808,6 +825,9 @@ eval_f <- function(X, target_value) {
   coefs_eval <- eval_list[["coefs_eval"]]
   alphas_eval <- eval_list[["alphas_eval"]]
   inflexions_eval <- eval_list[["inflexions_eval"]]
+  mm_lm_coefs <- eval_list[["mm_lm_coefs"]]
+  mediaVarsSorted <- eval_list[["mediaVarsSorted"]]
+
   # mediaSpendSortedFiltered <- eval_list[["mediaSpendSortedFiltered"]]
   hist_carryover_eval <- eval_list[["hist_carryover_eval"]]
 
@@ -818,6 +838,8 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
+    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   ))
 
@@ -828,6 +850,8 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
+    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   ))
 
@@ -838,6 +862,8 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
+    chnName = mediaVarsSorted,
     SIMPLIFY = TRUE
   )
 
@@ -845,18 +871,12 @@ eval_f <- function(X, target_value) {
   return(optm)
 }
 
-fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE) {
+fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL, chnName = NULL) {
   #Apply Michaelis Menten model to scale spend to exposure
-  if (criteria) {
-    xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  } else if (chnName %in% names(mm_lm_coefs)) {
-    xScaled <- x * mm_lm_coefs[chnName]
-  } else {
-    xScaled <- x
-  }
+  xScaled <- x * mm_lm_coefs[chnName]
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
+  xAdstocked <- xScaled + mean(x_hist_carryover)
   # Hill transformation
   if (get_sum) {
     xOut <- coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
@@ -867,38 +887,27 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
 }
 
 # https://www.derivative-calculator.net/ on the objective function 1/(1+gamma^alpha / x^alpha)
-fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover
-                         , chnName, vmax, km, criteria
+fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
+                         mm_lm_coefs = NULL, chnName = NULL
 ) {
   # Apply Michaelis Menten model to scale spend to exposure
-  if (criteria) {
-    xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  } else if (chnName %in% names(mm_lm_coefs)) {
-    xScaled <- x * mm_lm_coefs[chnName]
-  } else {
-    xScaled <- x
-  }
+
+  xScaled <- x * mm_lm_coefs[chnName]
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
+  xAdstocked <- xxScaled + mean(x_hist_carryover)
   xOut <- -coeff * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
   return(xOut)
 }
 
-fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover
-                                # , chnName, vmax, km, criteria
+fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover,
+                                mm_lm_coefs = NULL, chnName = NULL
 ) {
-  #Apply Michaelis Menten model to scale spend to exposure
-  if (criteria) {
-    xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  } else if (chnName %in% names(mm_lm_coefs)) {
-    xScaled <- x * mm_lm_coefs[chnName]
-  } else {
-    xScaled <- x
-  }
+  #Apply Michaelis Menten model to scale spend to exposur
+  xScaled <- x * mm_lm_coefs[chnName]
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
+  xAdstocked <- xScaled + mean(x_hist_carryover)
   xOut <- -coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
   return(xOut)
 }
