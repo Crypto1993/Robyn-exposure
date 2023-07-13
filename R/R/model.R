@@ -684,9 +684,7 @@ robyn_mmm <- function(InputCollect,
                 }
               }
             } else if (all(!is.null(x_lower_bounds)) && all(!is.null(x_upper_bounds))) {
-              if (any(check_factor)) {
-                stop("Factor variables are not allowed in lower and upper bounds")
-              }
+              
               if (length(x_lower_bounds) != length(x_upper_bounds)) {
                 stop("Lower and upper bounds must have the same length")
               }
