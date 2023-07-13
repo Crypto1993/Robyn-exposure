@@ -3,7 +3,7 @@ library(tidyverse)
 select_model <- "1_87_5"
 InputCollect <- readRDS("InputCollect.rds")
 OutputCollect <- readRDS("OutputCollect.rds")
-
+create_files <- TRUE
 AllocatorCollect1 <- robyn_allocator(
   InputCollect = InputCollect,
   OutputCollect = OutputCollect,
@@ -27,3 +27,10 @@ names(c()) <- test
 unlist(summarise_all(select(InputCollect$dt_input, any_of(InputCollect$paid_media_spends)), sum))
 
 InputCollect$dt_input %>% rename(ds = InputCollect$date_var)
+
+
+for (i in c("ciao", "nello")) {
+  print(i)
+}
+
+paid
