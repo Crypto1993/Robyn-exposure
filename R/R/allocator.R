@@ -686,6 +686,7 @@ robyn_allocator <- function(robyn_object = NULL,
   for (i in channel_for_allocation) { # i <- channels[i]
 
     carryover_vec <- eval_list$hist_carryover_eval[[translation[i]]]
+    carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
@@ -694,7 +695,6 @@ robyn_allocator <- function(robyn_object = NULL,
           mean(carryover_vec), .data$spend
         )
       ))
-    print(filter(dt_optimOutScurve, .data$channels == i)$spend)
     get_max_x <- max(filter(dt_optimOutScurve, .data$channels == i)$spend) * 1.5
     simulate_spend <- seq(0, get_max_x, length.out = 100)
     simulate_response <- fx_objective(
