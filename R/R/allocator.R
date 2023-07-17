@@ -152,6 +152,7 @@ robyn_allocator <- function(robyn_object = NULL,
   
   mm_lm_coefs <- InputCollect$modNLS$results$coef_lm
   names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
+  mm_lm_coefs <- mm_lm_coefs[media_order]
 
   # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
