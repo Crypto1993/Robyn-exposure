@@ -644,7 +644,7 @@ allocation_plots <- function(InputCollect, OutputCollect, dt_optimOut, select_mo
   plotDT_scurveMeanResponse <- filter(
     OutputCollect$xDecompAgg,
     .data$solID == select_model,
-    .data$rn %in% InputCollect$paid_media_spends
+    .data$rn %in% InputCollect$paid_media_vars
   )
   rsq_train_plot <- round(plotDT_scurveMeanResponse$rsq_train[1], 4)
   rsq_val_plot <- round(plotDT_scurveMeanResponse$rsq_val[1], 4)
