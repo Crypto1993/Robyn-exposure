@@ -292,7 +292,7 @@ robyn_allocator <- function(robyn_object = NULL,
       select_build = select_build,
       select_model = select_model,
       metric_name = mediaVarsSorted[i],
-      metric_value = histMediaVarsWindow[i], 
+      metric_value = initMediaVarsUnit[i], # histMediaVarsWindow[i], 
       date_range = date_range,
       dt_hyppar = OutputCollect$resultHypParam,
       dt_coef = OutputCollect$xDecompAgg,
@@ -305,10 +305,7 @@ robyn_allocator <- function(robyn_object = NULL,
     # val <- sort(resp$response_total)[round(length(resp$response_total) / 2)]
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
     
-    
     hist_carryover[[i]] <- resp$input_carryover
-
-    sprintf("Response %s: %s", mediaVarsSorted[i], resp$input_immediate)
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
@@ -651,7 +648,6 @@ robyn_allocator <- function(robyn_object = NULL,
     )
   .Options$ROBYN_TEMP <- NULL # Clean auxiliary method
 
-  print(dt_optimOut)
 ### ricomincio da qua
 ## fx vanno cambiato, ripristare i parametri di michaelis, poi facciamo l inverso
   ## Calculate curves and main points for each channel
@@ -732,13 +728,16 @@ robyn_allocator <- function(robyn_object = NULL,
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(response = ifelse(
         .data$channels == i & .data$type == "Carryover",
-        simulate_response_carryover, .data$response
+        simulate_response_carryover, 
+        .data$response
       ))
   }
   eval_list[["plotDT_scurve"]] <- plotDT_scurve <- as_tibble(bind_rows(plotDT_scurve))
   mainPoints <- dt_optimOutScurve %>%
     rename("response_point" = "response", "spend_point" = "spend", "channel" = "channels")
-  temp_caov <- mainPoints %>% filter(.data$type == "Carryover")
+  temp_caov <- mainPoints %>% 
+    filter(.data$type == "Carryover")
+
   mainPoints$mean_spend <- mainPoints$spend_point - temp_caov$spend_point
   mainPoints$mean_spend <- ifelse(mainPoints$type == "Carryover", mainPoints$spend_point, mainPoints$mean_spend)
   mainPoints$type <- factor(mainPoints$type, levels = c("Carryover", levs1))
