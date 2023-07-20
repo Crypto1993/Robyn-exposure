@@ -154,6 +154,12 @@ robyn_allocator <- function(robyn_object = NULL,
   names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
   mm_lm_coefs <- mm_lm_coefs[media_order]
 
+  if (!is.null(InputCollect$paid_media_spot_prices)){
+    mm_lm_coefs <- InputCollect$paid_media_spot_prices
+    names(mm_lm_coefs) <- InputCollect$paid_media_vars
+    mm_lm_coefs <- mm_lm_coefs[media_order]
+  }
+
   # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
   mediaSpendSorted <- paid_media_spends[media_order]
@@ -319,7 +325,7 @@ robyn_allocator <- function(robyn_object = NULL,
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
-       mm_lm_coefs = mm_lm_coefs[i],
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     names(hist_carryover[[i]]) <- resp$date
@@ -960,6 +966,7 @@ eval_g_eq_effi <- function(X, target_value) {
     alpha = eval_list$alphas_eval,
     inflexion = eval_list$inflexions_eval,
     x_hist_carryover = eval_list$hist_carryover_eval,
+    mm_lm_coefs = eval_list$mm_lm_coefs,
     SIMPLIFY = TRUE
   ))
 
@@ -984,6 +991,7 @@ eval_g_eq_effi <- function(X, target_value) {
     alpha = eval_list$alphas_eval,
     inflexion = eval_list$inflexions_eval,
     x_hist_carryover = eval_list$hist_carryover_eval,
+    mm_lm_coefs = eval_list$mm_lm_coefs,
     SIMPLIFY = TRUE
   )
 

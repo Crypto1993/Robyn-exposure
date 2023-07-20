@@ -181,6 +181,7 @@ robyn_inputs <- function(dt_input = NULL,
                          calibration_input = NULL,
                          json_file = NULL,
                          InputCollect = NULL,
+                         paid_media_spot_prices = NULL,
                          ...) {
   ### Use case 3: running robyn_inputs() with json_file
   if (!is.null(json_file)) {
@@ -327,6 +328,7 @@ robyn_inputs <- function(dt_input = NULL,
       adstock = adstock,
       hyperparameters = hyperparameters,
       calibration_input = calibration_input,
+      paid_media_spot_prices = paid_media_spot_prices,
       custom_params = list(...)
     )
 
