@@ -696,10 +696,8 @@ robyn_allocator <- function(robyn_object = NULL,
       filter(.data$channels == i , .data$type == "Bounded") %>%
       select(.data$spend) %>%
       unlist()
-    
-    print(spend_vec)
 
-    carryover_vec <- eval_list$hist_carryover_eval[[i]] * spend_vec - spend_vec
+    carryover_vec <- eval_list$hist_carryover_eval[[i]] * mean(spend_vec) - mean(spend_vec)
     carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
