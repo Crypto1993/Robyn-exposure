@@ -308,14 +308,14 @@ robyn_allocator <- function(robyn_object = NULL,
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
     
     hist_carryover[[i]] <- resp$input_carryover
-    vectors_adstock[[i]] <- resp$vectors_adstock
+    inflation_total[[i]] <- resp$inflation_total
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
       coeff = coefs_sorted[[mediaVarsSorted[i]]],
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
-      x_hist_carryover = resp$vectors_adstock,
+      x_hist_carryover = resp$inflation_total,
       mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
@@ -324,7 +324,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = coefs_sorted[[mediaVarsSorted[i]]],
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
-      x_hist_carryover = resp$vectors_adstock,
+      x_hist_carryover = resp$inflation_total,
       mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
