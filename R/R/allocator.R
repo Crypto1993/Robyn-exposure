@@ -697,10 +697,10 @@ robyn_allocator <- function(robyn_object = NULL,
       select(.data$spend) %>%
       unlist()
     
-    print(spend_vec[[1]])
-    print(eval_list$hist_carryover_eval[[i]])
+    print(spend_vec[[2]])
+    print(eval_list$hist_carryover_eval[[translation[i]]])
 
-    carryover_vec <- eval_list$hist_carryover_eval[[i]] * mean(spend_vec) - mean(spend_vec)
+    carryover_vec <- eval_list$hist_carryover_eval[[translation[i]]] * mean(spend_vec) - mean(spend_vec)
     carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
