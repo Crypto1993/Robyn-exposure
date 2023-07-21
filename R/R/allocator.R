@@ -691,9 +691,11 @@ robyn_allocator <- function(robyn_object = NULL,
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
 
+    print(i)
     spend_vec <- dt_optimOutScurve %>%
       filter(.data$channels == i & .data$type == "Bounded") %>%
-      select(.data$spend) %>% as.numeric()
+      select(.data$spend) %>%
+      unlist()
     
     print(spend_vec)
 
