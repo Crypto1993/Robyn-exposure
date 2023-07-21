@@ -920,7 +920,7 @@ fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
 
   # Adstock scales
   xAdstocked <- xScaled + mean(x_hist_carryover)
-  xOut <- -coeff * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
+  xOut <- -coeff * mm_lm_coefs * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
   return(xOut)
 }
 
