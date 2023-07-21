@@ -718,7 +718,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = 1,
+      x_hist_carryover = eval_list$hist_carryover_eval[[translation[i]]],
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
@@ -727,7 +727,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = 1,
+      x_hist_carryover = eval_list$hist_carryover_eval[[translation[i]]],
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
