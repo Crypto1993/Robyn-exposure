@@ -696,7 +696,7 @@ robyn_allocator <- function(robyn_object = NULL,
       select(.data$spend) %>%
       unlist() 
 
-    carryover_vec <- carryover_vec * spend_vec - spend_vec
+    carryover_vec <- eval_list$hist_carryover_eval[[i]] * spend_vec - spend_vec
     carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
