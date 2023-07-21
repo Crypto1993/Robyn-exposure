@@ -238,6 +238,7 @@ robyn_response <- function(InputCollect = NULL,
   }
   x_list <- transform_adstock(media_vec_origin, adstock, theta = theta, shape = shape, scale = scale)
   m_adstocked <- x_list$x_decayed
+  inflation_total <- x_list$inflation_total
   # net_carryover_ref <- m_adstocked - media_vec_origin
 
   ## Adstocking simulation
@@ -320,7 +321,8 @@ robyn_response <- function(InputCollect = NULL,
     response_carryover = response_carryover,
     response_immediate = response_immediate,
     usecase = usecase,
-    plot = p_res
+    plot = p_res,
+    inflation_total = inflation_total
   )
   class(ret) <- unique(c("robyn_response", class(ret)))
   return(ret)

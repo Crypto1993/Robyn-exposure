@@ -285,6 +285,8 @@ robyn_allocator <- function(robyn_object = NULL,
   initResponseUnit <- NULL
   initResponseMargUnit <- NULL
   hist_carryover <- list()
+  inflation_total <- list()
+
   for (i in seq_along(mediaVarsSorted)) {
     resp <- robyn_response(
       json_file = json_file,
@@ -306,13 +308,14 @@ robyn_allocator <- function(robyn_object = NULL,
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
     
     hist_carryover[[i]] <- resp$input_carryover
+    inflation_total[[i]] <- resp$inflation_total
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
       coeff = coefs_sorted[[mediaVarsSorted[i]]],
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
-      x_hist_carryover = mean(resp$input_carryover),
+      x_hist_carryover = resp$inflation_total,
       mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
@@ -321,7 +324,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = coefs_sorted[[mediaVarsSorted[i]]],
       alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
       inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
-      x_hist_carryover = mean(resp$input_carryover),
+      x_hist_carryover = resp$inflation_total,
       mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
@@ -330,7 +333,7 @@ robyn_allocator <- function(robyn_object = NULL,
     initResponseMargUnit <- c(initResponseMargUnit, resp_simulate_plus1 - resp_simulate)
   }
 
-  names(initResponseUnit) <- names(hist_carryover) <- mediaVarsSorted
+  names(initResponseUnit) <- names(hist_carryover) <-  names(inflation_total) <- mediaVarsSorted
   if (length(zero_spend_channel) > 0 && !quiet) {
     message("Media variables with 0 spending during date range: ", v2t(zero_spend_channel))
     # hist_carryover[zero_spend_channel] <- 0
@@ -412,7 +415,7 @@ robyn_allocator <- function(robyn_object = NULL,
   coefs_eval <- coefs_sorted[channel_for_allocation_media]
   alphas_eval <- alphas[paste0(channel_for_allocation_media, "_alphas")]
   inflexions_eval <- inflexions[paste0(channel_for_allocation_media, "_gammas")]
-  hist_carryover_eval <- hist_carryover[channel_for_allocation_media]
+  hist_carryover_eval <- inflation_total[channel_for_allocation_media]
 
   eval_list <- list(
     coefs_eval = coefs_eval,
@@ -688,7 +691,12 @@ robyn_allocator <- function(robyn_object = NULL,
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
 
-    carryover_vec <- eval_list$hist_carryover_eval[[translation[i]]]
+    spend_vec <- dt_optimOutScurve %>%
+      filter(.data$channels == i & .data$type == "Bounded") %>%
+      select(.data$spend) %>%
+      unlist() 
+
+    carryover_vec <- carryover_vec * spend_vec - spend_vec
     carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
@@ -705,7 +713,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = 0,
+      x_hist_carryover = 1,
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
@@ -714,7 +722,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = 0,
+      x_hist_carryover = 1,
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
@@ -900,7 +908,7 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
   xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- xScaled + mean(x_hist_carryover)
+  xAdstocked <- xScaled * x_hist_carryover  # + mean(x_hist_carryover)
   # Hill transformation
   if (get_sum) {
     xOut <- coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
@@ -919,7 +927,7 @@ fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
   xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- xScaled + mean(x_hist_carryover)
+  xAdstocked <- xScaled * x_hist_carryover  # + mean(x_hist_carryover)
   xOut <- -coeff * mm_lm_coefs * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
   return(xOut)
 }
@@ -931,7 +939,7 @@ fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover,
   xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- xScaled + mean(x_hist_carryover)
+  xAdstocked <- xScaled * x_hist_carryover  # + mean(x_hist_carryover)
   xOut <- -coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
   return(xOut)
 }
