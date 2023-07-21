@@ -696,6 +696,9 @@ robyn_allocator <- function(robyn_object = NULL,
       filter(.data$channels == i , .data$type == "Bounded") %>%
       select(.data$spend) %>%
       unlist()
+    
+    print(spend_vec[[1]])
+    print(eval_list$hist_carryover_eval[[i]])
 
     carryover_vec <- eval_list$hist_carryover_eval[[i]] * mean(spend_vec) - mean(spend_vec)
     carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
