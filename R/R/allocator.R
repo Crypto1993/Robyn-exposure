@@ -693,7 +693,7 @@ robyn_allocator <- function(robyn_object = NULL,
 
     print(i)
     spend_vec <- dt_optimOutScurve %>%
-      filter(.data$channels == i & .data$type == "Bounded") %>%
+      filter(.data$channels == i , .data$type == "Bounded") %>%
       select(.data$spend) %>%
       unlist()
     
