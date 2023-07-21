@@ -701,8 +701,8 @@ robyn_allocator <- function(robyn_object = NULL,
     print(spend_vec)
     print(eval_list$hist_carryover_eval[[translation[i]]])
 
-    carryover_vec <-  mean(spend_vec) -  mean(spend_vec) / eval_list$hist_carryover_eval[[translation[i]]]
-    carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
+    carryover_vec <- spend_vec - spend_vec / eval_list$hist_carryover_eval[[translation[i]]]
+    
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
