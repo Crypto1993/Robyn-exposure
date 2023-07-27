@@ -692,15 +692,12 @@ robyn_allocator <- function(robyn_object = NULL,
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
 
-    print(i)
     spend_vec <- dt_optimOutScurve %>%
       filter(.data$channels == i, .data$type == "Bounded") %>%
       select(.data$spend) %>%
       unlist()
     
     spend_vec <- as.numeric(spend_vec[[2]])
-    print(spend_vec)
-    print(eval_list$hist_carryover_eval[[translation[i]]])
 
     carryover_vec <- spend_vec - spend_vec / eval_list$hist_carryover_eval[[translation[i]]]
     
@@ -719,7 +716,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = eval_list$hist_carryover_eval[[translation[i]]],
+      x_hist_carryover = 1,
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
@@ -728,7 +725,7 @@ robyn_allocator <- function(robyn_object = NULL,
       coeff = eval_list$coefs_eval[[translation[i]]],
       alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
       inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
-      x_hist_carryover = eval_list$hist_carryover_eval[[translation[i]]],
+      x_hist_carryover = 1,
       mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
