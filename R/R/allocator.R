@@ -122,7 +122,7 @@ robyn_allocator <- function(robyn_object = NULL,
     if (is.null(select_model)) select_model <- OutputCollect$selectID
   }
 
-  ## Collect inputs
+  ## Collect inputs, da InputCollect OutputCollect select_model
   if (!is.null(robyn_object) && (is.null(InputCollect) && is.null(OutputCollect))) {
     if ("robyn_exported" %in% class(robyn_object)) {
       imported <- robyn_object
@@ -144,11 +144,28 @@ robyn_allocator <- function(robyn_object = NULL,
 
   message(paste(">>> Running budget allocator for model ID", select_model, "..."))
 
-  ## Set local data & params values
+  ## Set local data & params values, determina le variabili di speso su cui lavorare e prende i coefficienti
+  # modifica per sapere che nella regressione prende il corretto nome dei coefficienti, abbiamo lo stesso ordine di paidmediavars
+  paid_media_vars <- InputCollect$paid_media_vars
+  media_order <- order(paid_media_vars)
+  mediaVarsSorted <- paid_media_vars[media_order]
+  
+  mm_lm_coefs <- InputCollect$modNLS$results$coef_lm
+  names(mm_lm_coefs) <- InputCollect$modNLS$results$channel
+  mm_lm_coefs <- mm_lm_coefs[media_order]
+
+  if (!is.null(InputCollect$paid_media_spot_prices)){
+    mm_lm_coefs <- InputCollect$paid_media_spot_prices
+    names(mm_lm_coefs) <- InputCollect$paid_media_vars
+    mm_lm_coefs <- mm_lm_coefs[media_order]
+  }
+
+  # modifica Ale 
   paid_media_spends <- InputCollect$paid_media_spends
-  media_order <- order(paid_media_spends)
   mediaSpendSorted <- paid_media_spends[media_order]
+  # fine modific
   dep_var_type <- InputCollect$dep_var_type
+
   if (is.null(channel_constr_low)) {
     channel_constr_low <- case_when(
       scenario == "max_response" ~ 0.5,
@@ -169,12 +186,18 @@ robyn_allocator <- function(robyn_object = NULL,
   channel_constr_low <- channel_constr_low[media_order]
   channel_constr_up <- channel_constr_up[media_order]
   dt_hyppar <- filter(OutputCollect$resultHypParam, .data$solID == select_model)
-  dt_bestCoef <- filter(OutputCollect$xDecompAgg, .data$solID == select_model, .data$rn %in% paid_media_spends)
+  dt_bestCoef <- filter(OutputCollect$xDecompAgg, .data$solID == select_model, .data$rn %in% paid_media_vars)
+
 
   ## Check inputs and parameters
   scenario <- check_allocator(
-    OutputCollect, select_model, paid_media_spends, scenario,
-    channel_constr_low, channel_constr_up, constr_mode
+    OutputCollect,
+    select_model,
+    paid_media_spends,
+    scenario,
+    channel_constr_low,
+    channel_constr_up,
+    constr_mode
   )
 
   ## Sort media
@@ -185,22 +208,28 @@ robyn_allocator <- function(robyn_object = NULL,
   coefSelectorSorted <- dt_coefSorted$coef > 0
   names(coefSelectorSorted) <- dt_coefSorted$rn
 
-  dt_hyppar <- select(dt_hyppar, hyper_names(InputCollect$adstock, mediaSpendSorted)) %>%
+  dt_hyppar <- select(dt_hyppar, hyper_names(InputCollect$adstock, mediaVarsSorted)) %>%
     select(sort(colnames(.)))
-  dt_bestCoef <- dt_bestCoef[dt_bestCoef$rn %in% mediaSpendSorted, ]
+  dt_bestCoef <- dt_bestCoef[dt_bestCoef$rn %in% mediaVarsSorted, ]
   channelConstrLowSorted <- channel_constr_low[mediaSpendSorted]
   channelConstrUpSorted <- channel_constr_up[mediaSpendSorted]
 
-  ## Get hill parameters for each channel
+  ## Get hill parameters for each channel, vedi in fondo usa adstocked media
   hills <- get_hill_params(
-    InputCollect, OutputCollect, dt_hyppar, dt_coef, mediaSpendSorted, select_model
+    InputCollect, 
+    OutputCollect, 
+    dt_hyppar, 
+    dt_coef, 
+    mediaVarsSorted, 
+    select_model
   )
   alphas <- hills$alphas
   inflexions <- hills$inflexions
   coefs_sorted <- hills$coefs_sorted
 
   # Spend values based on date range set
-  dt_optimCost <- slice(InputCollect$dt_mod, InputCollect$rollingWindowStartWhich:InputCollect$rollingWindowEndWhich)
+  temp_dt = InputCollect$dt_input %>% rename(ds = InputCollect$date_var)
+  dt_optimCost <- slice(temp_dt, InputCollect$rollingWindowStartWhich:InputCollect$rollingWindowEndWhich)
   new_date_range <- check_metric_dates(date_range, dt_optimCost$ds, InputCollect$dayInterval, quiet = FALSE, is_allocator = TRUE)
   date_min <- head(new_date_range$date_range_updated, 1)
   date_max <- tail(new_date_range$date_range_updated, 1)
@@ -238,18 +267,32 @@ robyn_allocator <- function(robyn_object = NULL,
   usecase <- which_usecase(initSpendUnit[1], date_range)
   usecase <- paste(usecase, ifelse(!is.null(total_budget), "+ defined_budget", "+ historical_budget"))
 
+  # modifica con grps
+  histMediaVarsAll <- unlist(summarise_all(select(dt_optimCost, any_of(mediaVarsSorted)), sum))
+  histMediaVarsAllTotal <- sum(histMediaVarsAll)
+  histMediaVarsAllUnit <- unlist(summarise_all(select(dt_optimCost, any_of(mediaVarsSorted)), mean))
+  histMediaVarsAllUnitTotal <- sum(histMediaVarsAllUnit)
+  histMediaVarsAllShare <- histMediaVarsAllUnit / histMediaVarsAllUnitTotal
+
+  histMediaVarsWindow <- unlist(summarise_all(select(histFiltered, any_of(mediaVarsSorted)), sum))
+  histMediaVarsWindowTotal <- sum(histMediaVarsWindow)
+  initMediaVarsUnit <- histMediaVarsWindowUnit <- unlist(summarise_all(select(histFiltered, any_of(mediaVarsSorted)), mean))
+  histMediaVarsWindowUnitTotal <- sum(histMediaVarsWindowUnit)
+  histMediaVarsWindowShare <- initMediaVarsUnit / histMediaVarsWindowUnitTotal
+
+
   # Response values based on date range -> mean spend
   initResponseUnit <- NULL
   initResponseMargUnit <- NULL
   hist_carryover <- list()
-  for (i in seq_along(mediaSpendSorted)) {
+  for (i in seq_along(mediaVarsSorted)) {
     resp <- robyn_response(
       json_file = json_file,
       robyn_object = robyn_object,
       select_build = select_build,
       select_model = select_model,
-      metric_name = mediaSpendSorted[i],
-      metric_value = initSpendUnit[i],
+      metric_name = mediaVarsSorted[i],
+      metric_value = histMediaVarsWindow[i], 
       date_range = date_range,
       dt_hyppar = OutputCollect$resultHypParam,
       dt_coef = OutputCollect$xDecompAgg,
@@ -261,29 +304,33 @@ robyn_allocator <- function(robyn_object = NULL,
     )
     # val <- sort(resp$response_total)[round(length(resp$response_total) / 2)]
     # histSpendUnit[i] <- resp$input_immediate[which(resp$response_total == val)]
+    
     hist_carryover[[i]] <- resp$input_carryover
     # get simulated response
     resp_simulate <- fx_objective(
       x = initSpendUnit[i],
-      coeff = coefs_sorted[[mediaSpendSorted[i]]],
-      alpha = alphas[[paste0(mediaSpendSorted[i], "_alphas")]],
-      inflexion = inflexions[[paste0(mediaSpendSorted[i], "_gammas")]],
+      coeff = coefs_sorted[[mediaVarsSorted[i]]],
+      alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
+      inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     resp_simulate_plus1 <- fx_objective(
       x = initSpendUnit[i] + 1,
-      coeff = coefs_sorted[[mediaSpendSorted[i]]],
-      alpha = alphas[[paste0(mediaSpendSorted[i], "_alphas")]],
-      inflexion = inflexions[[paste0(mediaSpendSorted[i], "_gammas")]],
+      coeff = coefs_sorted[[mediaVarsSorted[i]]],
+      alpha = alphas[[paste0(mediaVarsSorted[i], "_alphas")]],
+      inflexion = inflexions[[paste0(mediaVarsSorted[i], "_gammas")]],
       x_hist_carryover = mean(resp$input_carryover),
+      mm_lm_coefs = mm_lm_coefs[i],
       get_sum = FALSE
     )
     names(hist_carryover[[i]]) <- resp$date
     initResponseUnit <- c(initResponseUnit, resp_simulate)
     initResponseMargUnit <- c(initResponseMargUnit, resp_simulate_plus1 - resp_simulate)
   }
-  names(initResponseUnit) <- names(hist_carryover) <- mediaSpendSorted
+
+  names(initResponseUnit) <- names(hist_carryover) <- mediaVarsSorted
   if (length(zero_spend_channel) > 0 && !quiet) {
     message("Media variables with 0 spending during date range: ", v2t(zero_spend_channel))
     # hist_carryover[zero_spend_channel] <- 0
@@ -312,7 +359,7 @@ robyn_allocator <- function(robyn_object = NULL,
       target_value_ext <- 1
     }
   }
-  temp_init <- temp_init_all <- initSpendUnit
+  temp_init <- temp_init_all <- initSpendUnit # ATTENZIONE 
   # if no spend within window as initial spend, use historical average
   if (length(zero_spend_channel) > 0) temp_init_all[zero_spend_channel] <- histSpendAllUnit[zero_spend_channel]
   # Exclude channels with 0 coef from optimisation
@@ -340,6 +387,8 @@ robyn_allocator <- function(robyn_object = NULL,
   }
   channel_for_allocation_loc <- mediaSpendSorted %in% c(zero_coef_channel, zero_constraint_channel)
   channel_for_allocation <- mediaSpendSorted[!channel_for_allocation_loc]
+  channel_for_allocation_media <- mediaVarsSorted[!channel_for_allocation_loc]
+
   if (length(zero_coef_channel) > 0) {
     temp_init <- temp_init_all[channel_for_allocation]
     temp_ub <- temp_ub_all[channel_for_allocation]
@@ -360,16 +409,17 @@ robyn_allocator <- function(robyn_object = NULL,
   ub_ext <- temp_init * temp_ub_ext
 
   # Gather all values that will be used internally on optim (nloptr)
-  coefs_eval <- coefs_sorted[channel_for_allocation]
-  alphas_eval <- alphas[paste0(channel_for_allocation, "_alphas")]
-  inflexions_eval <- inflexions[paste0(channel_for_allocation, "_gammas")]
-  hist_carryover_eval <- hist_carryover[channel_for_allocation]
+  coefs_eval <- coefs_sorted[channel_for_allocation_media]
+  alphas_eval <- alphas[paste0(channel_for_allocation_media, "_alphas")]
+  inflexions_eval <- inflexions[paste0(channel_for_allocation_media, "_gammas")]
+  hist_carryover_eval <- hist_carryover[channel_for_allocation_media]
 
   eval_list <- list(
     coefs_eval = coefs_eval,
     alphas_eval = alphas_eval,
     inflexions_eval = inflexions_eval,
-    # mediaSpendSortedFiltered = mediaSpendSorted,
+    mm_lm_coefs = mm_lm_coefs,
+    mediaVarsSorted = mediaVarsSorted,
     total_budget = total_budget,
     total_budget_unit = total_budget_unit,
     hist_carryover_eval = hist_carryover_eval,
@@ -397,6 +447,7 @@ robyn_allocator <- function(robyn_object = NULL,
   x_hist_carryover <- unlist(lapply(hist_carryover_eval, mean))
   if (scenario == "max_response") {
     ## bounded optimisation
+
     nlsMod <- nloptr::nloptr(
       x0 = x0,
       eval_f = eval_f,
@@ -477,6 +528,7 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
+    mm_lm_coefs = mm_lm_coefs,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnit
@@ -487,6 +539,7 @@ robyn_allocator <- function(robyn_object = NULL,
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = x_hist_carryover,
+    mm_lm_coefs = mm_lm_coefs,
     get_sum = FALSE,
     SIMPLIFY = TRUE
   ) - optmResponseUnitUnbound
@@ -595,6 +648,8 @@ robyn_allocator <- function(robyn_object = NULL,
     )
   .Options$ROBYN_TEMP <- NULL # Clean auxiliary method
 
+### ricomincio da qua
+## fx vanno cambiato, ripristare i parametri di michaelis, poi facciamo l inverso
   ## Calculate curves and main points for each channel
   if (scenario == "max_response") {
     levs1 <- c("Initial", "Bounded", paste0("Bounded x", channel_constr_multiplier))
@@ -626,9 +681,15 @@ robyn_allocator <- function(robyn_object = NULL,
     mutate(spend = as.numeric(.data$spend), response = as.numeric(.data$response)) %>%
     group_by(.data$channels)
 
+
+  translation <- mediaVarsSorted
+  names(translation) <- mediaSpendSorted
+
   plotDT_scurve <- list()
   for (i in channel_for_allocation) { # i <- channels[i]
-    carryover_vec <- eval_list$hist_carryover_eval[[i]]
+
+    carryover_vec <- eval_list$hist_carryover_eval[[translation[i]]]
+    carryover_vec <- carryover_vec / mm_lm_coefs[[translation[i]]]
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(spend = ifelse(
         .data$channels == i & .data$type %in% levs1,
@@ -641,22 +702,25 @@ robyn_allocator <- function(robyn_object = NULL,
     simulate_spend <- seq(0, get_max_x, length.out = 100)
     simulate_response <- fx_objective(
       x = simulate_spend,
-      coeff = eval_list$coefs_eval[[i]],
-      alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
-      inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
+      coeff = eval_list$coefs_eval[[translation[i]]],
+      alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
+      inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
       x_hist_carryover = 0,
+      mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
     simulate_response_carryover <- fx_objective(
       x = mean(carryover_vec),
-      coeff = eval_list$coefs_eval[[i]],
-      alpha = eval_list$alphas_eval[[paste0(i, "_alphas")]],
-      inflexion = eval_list$inflexions_eval[[paste0(i, "_gammas")]],
+      coeff = eval_list$coefs_eval[[translation[i]]],
+      alpha = eval_list$alphas_eval[[paste0(translation[i], "_alphas")]],
+      inflexion = eval_list$inflexions_eval[[paste0(translation[i], "_gammas")]],
       x_hist_carryover = 0,
+      mm_lm_coefs = mm_lm_coefs[translation[i]],
       get_sum = FALSE
     )
     plotDT_scurve[[i]] <- data.frame(
-      channel = i, spend = simulate_spend,
+      channel = i, 
+      spend = simulate_spend,
       mean_carryover = mean(carryover_vec),
       carryover_response = simulate_response_carryover,
       total_response = simulate_response
@@ -664,13 +728,16 @@ robyn_allocator <- function(robyn_object = NULL,
     dt_optimOutScurve <- dt_optimOutScurve %>%
       mutate(response = ifelse(
         .data$channels == i & .data$type == "Carryover",
-        simulate_response_carryover, .data$response
+        simulate_response_carryover, 
+        .data$response
       ))
   }
   eval_list[["plotDT_scurve"]] <- plotDT_scurve <- as_tibble(bind_rows(plotDT_scurve))
   mainPoints <- dt_optimOutScurve %>%
     rename("response_point" = "response", "spend_point" = "spend", "channel" = "channels")
-  temp_caov <- mainPoints %>% filter(.data$type == "Carryover")
+  temp_caov <- mainPoints %>% 
+    filter(.data$type == "Carryover")
+
   mainPoints$mean_spend <- mainPoints$spend_point - temp_caov$spend_point
   mainPoints$mean_spend <- ifelse(mainPoints$type == "Carryover", mainPoints$spend_point, mainPoints$mean_spend)
   mainPoints$type <- factor(mainPoints$type, levels = c("Carryover", levs1))
@@ -784,6 +851,9 @@ eval_f <- function(X, target_value) {
   coefs_eval <- eval_list[["coefs_eval"]]
   alphas_eval <- eval_list[["alphas_eval"]]
   inflexions_eval <- eval_list[["inflexions_eval"]]
+  mm_lm_coefs <- eval_list[["mm_lm_coefs"]]
+  mediaVarsSorted <- eval_list[["mediaVarsSorted"]]
+
   # mediaSpendSortedFiltered <- eval_list[["mediaSpendSortedFiltered"]]
   hist_carryover_eval <- eval_list[["hist_carryover_eval"]]
 
@@ -794,6 +864,7 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
     SIMPLIFY = TRUE
   ))
 
@@ -804,6 +875,7 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
     SIMPLIFY = TRUE
   ))
 
@@ -814,6 +886,7 @@ eval_f <- function(X, target_value) {
     alpha = alphas_eval,
     inflexion = inflexions_eval,
     x_hist_carryover = hist_carryover_eval,
+    mm_lm_coefs = mm_lm_coefs,
     SIMPLIFY = TRUE
   )
 
@@ -821,18 +894,13 @@ eval_f <- function(X, target_value) {
   return(optm)
 }
 
-fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE) {
-  # Apply Michaelis Menten model to scale spend to exposure
-  # if (criteria) {
-  #   xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  # } else if (chnName %in% names(mm_lm_coefs)) {
-  #   xScaled <- x * mm_lm_coefs[chnName]
-  # } else {
-  #   xScaled <- x
-  # }
+fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum = TRUE, mm_lm_coefs = NULL) {
+  #Apply Michaelis Menten model to scale spend to exposure
+  
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
+  xAdstocked <- xScaled + mean(x_hist_carryover)
   # Hill transformation
   if (get_sum) {
     xOut <- coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
@@ -843,38 +911,27 @@ fx_objective <- function(x, coeff, alpha, inflexion, x_hist_carryover, get_sum =
 }
 
 # https://www.derivative-calculator.net/ on the objective function 1/(1+gamma^alpha / x^alpha)
-fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover
-                        # , chnName, vmax, km, criteria
+fx_gradient <- function(x, coeff, alpha, inflexion, x_hist_carryover,
+                         mm_lm_coefs = NULL
 ) {
   # Apply Michaelis Menten model to scale spend to exposure
-  # if (criteria) {
-  #   xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  # } else if (chnName %in% names(mm_lm_coefs)) {
-  #   xScaled <- x * mm_lm_coefs[chnName]
-  # } else {
-  #   xScaled <- x
-  # }
+
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
-  xOut <- -coeff * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
+  xAdstocked <- xScaled + mean(x_hist_carryover)
+  xOut <- -coeff * mm_lm_coefs * sum((alpha * (inflexion**alpha) * (xAdstocked**(alpha - 1))) / (xAdstocked**alpha + inflexion**alpha)**2)
   return(xOut)
 }
 
-fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover
-                                # , chnName, vmax, km, criteria
+fx_objective.chanel <- function(x, coeff, alpha, inflexion, x_hist_carryover,
+                                mm_lm_coefs = NULL
 ) {
-  # Apply Michaelis Menten model to scale spend to exposure
-  # if (criteria) {
-  #   xScaled <- mic_men(x = x, Vmax = vmax, Km = km) # vmax * x / (km + x)
-  # } else if (chnName %in% names(mm_lm_coefs)) {
-  #   xScaled <- x * mm_lm_coefs[chnName]
-  # } else {
-  #   xScaled <- x
-  # }
+  #Apply Michaelis Menten model to scale spend to exposur
+  xScaled <- x * mm_lm_coefs
 
   # Adstock scales
-  xAdstocked <- x + mean(x_hist_carryover)
+  xAdstocked <- xScaled + mean(x_hist_carryover)
   xOut <- -coeff * sum((1 + inflexion**alpha / xAdstocked**alpha)**-1)
   return(xOut)
 }
@@ -908,6 +965,7 @@ eval_g_eq_effi <- function(X, target_value) {
     alpha = eval_list$alphas_eval,
     inflexion = eval_list$inflexions_eval,
     x_hist_carryover = eval_list$hist_carryover_eval,
+    mm_lm_coefs = eval_list$mm_lm_coefs,
     SIMPLIFY = TRUE
   ))
 
@@ -932,6 +990,7 @@ eval_g_eq_effi <- function(X, target_value) {
     alpha = eval_list$alphas_eval,
     inflexion = eval_list$inflexions_eval,
     x_hist_carryover = eval_list$hist_carryover_eval,
+    mm_lm_coefs = eval_list$mm_lm_coefs,
     SIMPLIFY = TRUE
   )
 

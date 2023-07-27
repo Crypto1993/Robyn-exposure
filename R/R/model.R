@@ -465,6 +465,14 @@ robyn_mmm <- function(InputCollect,
     paid_media_signs <- InputCollect$paid_media_signs
     prophet_signs <- InputCollect$prophet_signs
     organic_signs <- InputCollect$organic_signs
+    context_lower_bounds <- InputCollect$context_lower_bounds
+    context_upper_bounds <- InputCollect$context_upper_bounds
+    paid_media_lower_bounds <- InputCollect$paid_media_lower_bounds
+    paid_media_upper_bounds <- InputCollect$paid_media_upper_bounds
+    prophet_lower_bounds <- InputCollect$prophet_lower_bounds
+    prophet_upper_bounds <- InputCollect$prophet_upper_bounds
+    organic_lower_bounds <- InputCollect$organic_lower_bounds
+    organic_upper_bounds <- InputCollect$organic_upper_bounds
     calibration_input <- InputCollect$calibration_input
     optimizer_name <- nevergrad_algo
     i <- NULL # For parallel iterations (globalVar)
@@ -623,34 +631,70 @@ robyn_mmm <- function(InputCollect,
             }
 
             ## Define and set sign control
-            dt_sign <- select(dt_window, -.data$dep_var)
-            x_sign <- c(prophet_signs, context_signs, paid_media_signs, organic_signs)
-            names(x_sign) <- c(prophet_vars, context_vars, paid_media_spends, organic_vars)
-            check_factor <- unlist(lapply(dt_sign, is.factor))
-            lower.limits <- rep(0, length(prophet_signs))
-            upper.limits <- rep(1, length(prophet_signs))
-            for (s in (length(prophet_signs) + 1):length(x_sign)) {
-              if (check_factor[s] == TRUE) {
-                level.n <- length(levels(unlist(dt_sign[, s, with = FALSE])))
-                if (level.n <= 1) {
-                  stop("All factor variables must have more than 1 level")
-                }
-                lower_vec <- if (x_sign[s] == "positive") {
-                  rep(0, level.n - 1)
+              x_lower_bounds <- c(
+                prophet_lower_bounds,
+                context_lower_bounds,
+                paid_media_lower_bounds,
+                organic_lower_bounds
+              )
+              x_upper_bounds <- c(
+                prophet_upper_bounds,
+                context_upper_bounds,
+                paid_media_upper_bounds,
+                organic_upper_bounds
+              )
+              if (all(is.null(x_lower_bounds)) && all(is.null(x_upper_bounds))) {
+              dt_sign <- select(dt_window, -.data$dep_var)
+              x_sign <- c(
+                prophet_signs,
+                context_signs,
+                paid_media_signs,
+                organic_signs
+              )
+              names(x_sign) <- c(
+                prophet_vars,
+                context_vars,
+                paid_media_spends,
+                organic_vars
+              )
+              check_factor <- unlist(lapply(dt_sign, is.factor))
+              lower.limits <- rep(0, length(prophet_signs))
+              upper.limits <- rep(1, length(prophet_signs))
+              for (s in (length(prophet_signs) + 1):length(x_sign)) {
+                if (check_factor[s] == TRUE) {
+                  level.n <- length(levels(unlist(dt_sign[, s, with = FALSE])))
+                  if (level.n <= 1) {
+                    stop("All factor variables must have more than 1 level")
+                  }
+                  lower_vec <- if (x_sign[s] == "positive") {
+                    rep(0, level.n - 1)
+                  } else {
+                    rep(-Inf, level.n - 1)
+                  }
+                  upper_vec <- if (x_sign[s] == "negative") {
+                    rep(0, level.n - 1)
+                  } else {
+                    rep(Inf, level.n - 1)
+                  }
+                  lower.limits <- c(lower.limits, lower_vec)
+                  upper.limits <- c(upper.limits, upper_vec)
                 } else {
-                  rep(-Inf, level.n - 1)
+                  lower.limits <- c(lower.limits, ifelse(x_sign[s] == "positive", 0, -Inf))
+                  upper.limits <- c(upper.limits, ifelse(x_sign[s] == "negative", 0, Inf))
                 }
-                upper_vec <- if (x_sign[s] == "negative") {
-                  rep(0, level.n - 1)
-                } else {
-                  rep(Inf, level.n - 1)
-                }
-                lower.limits <- c(lower.limits, lower_vec)
-                upper.limits <- c(upper.limits, upper_vec)
-              } else {
-                lower.limits <- c(lower.limits, ifelse(x_sign[s] == "positive", 0, -Inf))
-                upper.limits <- c(upper.limits, ifelse(x_sign[s] == "negative", 0, Inf))
               }
+            } else if (all(!is.null(x_lower_bounds)) && all(!is.null(x_upper_bounds))) {
+              
+              if (length(x_lower_bounds) != length(x_upper_bounds)) {
+                stop("Lower and upper bounds must have the same length")
+              }
+              if (any(x_lower_bounds > x_upper_bounds)) {
+                stop("Lower bounds must be less than or equal to upper bounds")
+              }
+               lower.limits <- x_lower_bounds
+               upper.limits <- x_upper_bounds
+            } else {
+              stop("Lower and upper bounds must be both NULL or both not NULL")
             }
 
             #####################################
