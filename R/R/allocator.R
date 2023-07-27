@@ -447,7 +447,8 @@ robyn_allocator <- function(robyn_object = NULL,
   }
 
   ## Run optim
-  x_hist_carryover <- unlist(lapply(hist_carryover_eval, mean))
+  x_hist_carryover <- unlist(lapply(inflation_total, mean))
+
   if (scenario == "max_response") {
     ## bounded optimisation
 
