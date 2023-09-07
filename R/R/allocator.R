@@ -697,7 +697,6 @@ robyn_allocator <- function(robyn_object = NULL,
       select(.data$spend) %>%
       unlist()
     
-    spend_vec <- as.numeric(spend_vec[[2]])
 
     carryover_vec <- spend_vec - spend_vec / eval_list$hist_carryover_eval[[translation[i]]]
     
